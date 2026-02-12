@@ -7,11 +7,30 @@ export class Survivor extends Entity {
 		super(x, y, "#4ade80", "/assets/survivor.svg", 1.5);
 	}
 
+	dashCooldown: number = 3000;
+	lastDashTime: number = 0;
+
 	update(entities: Entity[], canvasWidth: number, canvasHeight: number): void {
+		const now = Date.now();
 		const hunters = entities.filter(e => e instanceof Hunter) as Hunter[];
 		const items = entities.filter(e => e instanceof Item) as Item[];
 
-		// 1. Flee from hunters first (highest priority)
+		// Use constructor name to avoid circular dependency/type issues in some environments
+		const projectiles = entities.filter(e => e.constructor.name === 'Projectile');
+
+		// Handle effects
+		const currentSpeed = this.effects.speedBoost > now ? this.speed * 2.5 : this.speed;
+
+		// 1. Dash logic: boost away if projectile is close
+		for (const p of projectiles) {
+			if (this.distanceTo(p) < 60 && now - this.lastDashTime > this.dashCooldown) {
+				this.effects.speedBoost = now + 600; // 0.6s dash
+				this.lastDashTime = now;
+				break;
+			}
+		}
+
+		// 2. Flee from hunters first (highest priority)
 		let nearestHunter: Hunter | null = null;
 		let minHunterDist = 150;
 
@@ -24,9 +43,9 @@ export class Survivor extends Entity {
 		}
 
 		if (nearestHunter) {
-			this.moveAwayFrom(nearestHunter.x, nearestHunter.y);
+			this.moveAwayFrom(nearestHunter.x, nearestHunter.y, currentSpeed);
 		}
-		// 2. If no hunters nearby, seek nearest item
+		// 3. If no hunters nearby, seek nearest item
 		else {
 			let nearestItem: Item | null = null;
 			let minItemDist = Infinity;
@@ -40,11 +59,11 @@ export class Survivor extends Entity {
 			}
 
 			if (nearestItem) {
-				this.moveTowards(nearestItem.x, nearestItem.y);
+				this.moveTowards(nearestItem.x, nearestItem.y, currentSpeed);
 			} else {
 				// Idle movement
-				this.x += (Math.random() - 0.5) * 1;
-				this.y += (Math.random() - 0.5) * 1;
+				this.x += (Math.random() - 0.5) * currentSpeed;
+				this.y += (Math.random() - 0.5) * currentSpeed;
 			}
 		}
 

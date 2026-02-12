@@ -2,18 +2,34 @@
 ---
 <div class="game-container">
   <div class="header">
-    <h2>Survivors POO Game</h2>
-    <div class="score-board">Objetos: <span id="scoreVal">0</span> / 20</div>
+    <div class="title-section">
+      <h1>SURVIVORS <span class="pro-badge">ULTIMATE PRO</span></h1>
+      <p>Esquiva proyectiles, recolecta orbes y sobrevive al Berserker.</p>
+    </div>
+    <div class="score-card shadow-lg">
+      <div class="label">OBJETIVOS</div>
+      <div class="value"><span id="scoreVal">0</span> <span class="total">/ 50</span></div>
+    </div>
   </div>
+
   <div class="canvas-wrapper">
     <canvas id="gameCanvas" width="800" height="500"></canvas>
     <div id="statusOverlay" class="overlay hidden">
-      <h1 id="statusMsg">¡Ganan los Supervivientes!</h1>
-      <button id="resetBtn">Jugar de nuevo</button>
+      <div class="message-box">
+        <h1 id="statusMsg">¡Sobrevivieron!</h1>
+        <p id="subMsg">Has dominado el modo God Mode.</p>
+        <button id="resetBtn">PROBAR DE NUEVO</button>
+      </div>
     </div>
   </div>
-  <div class="ui">
-    <p><span class="hunter"></span> Lobos persiguen | <span class="survivor"></span> Humanos recolectan | <span class="item"></span> Estrellas</p>
+
+  <div class="ui-footer">
+    <div class="legend">
+      <div class="item"><span class="icon shield"></span> Escudo</div>
+      <div class="item"><span class="icon speed"></span> Dash</div>
+      <div class="item"><span class="icon obstacle"></span> Muro</div>
+      <div class="item"><span class="icon minimap"></span> Minimapa</div>
+    </div>
   </div>
 </div>
 
@@ -26,6 +42,7 @@
   const scoreVal = document.getElementById("scoreVal")!;
   const statusOverlay = document.getElementById("statusOverlay")!;
   const statusMsg = document.getElementById("statusMsg")!;
+  const subMsg = document.getElementById("subMsg")!;
 
   let world = new GameWorld(
     canvas.width,
@@ -36,8 +53,9 @@
         statusOverlay.classList.add('hidden');
       } else {
         statusOverlay.classList.remove('hidden');
-        statusMsg.innerText = state === 'survivorsWin' ? '✨ ¡Sobrevivieron!' : '💀 ¡Cazados!';
-        statusMsg.style.color = state === 'survivorsWin' ? '#4ade80' : '#f87171';
+        statusMsg.innerText = state === 'survivorsWin' ? '🌌 ¡DIOS!' : '💀 ANIQUILADOS';
+        statusMsg.style.color = state === 'survivorsWin' ? '#34d399' : '#f87171';
+        subMsg.innerText = state === 'survivorsWin' ? 'Has recolectado 50 estrellas en modo God.' : 'El mundo es demasiado grande para esconderse.';
       }
     }
   );
@@ -56,113 +74,180 @@
 </script>
 
 <style>
+  :root {
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --accent: #3b82f6;
+  }
+
   .game-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    padding: 2rem;
-    background: #0f172a;
-    border-radius: 1.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    gap: 1.5rem;
+    padding: 2.5rem;
+    background: radial-gradient(circle at top, #1e293b, #0f172a);
+    border-radius: 2rem;
+    box-shadow: 0 0 80px rgba(0,0,0,0.5);
     color: white;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Outfit', 'Inter', sans-serif;
+    max-width: 900px;
   }
 
   .header {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 0 1rem;
+    align-items: flex-end;
   }
 
-  .score-board {
-    font-weight: 700;
-    font-size: 1.2rem;
+  .title-section h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin: 0;
+    letter-spacing: -1px;
+    background: linear-gradient(to right, #60a5fa, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .pro-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    background: #ef4444;
+    -webkit-text-fill-color: white;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+  }
+
+  .title-section p {
+    color: #64748b;
+    margin: 0.5rem 0 0 0;
+  }
+
+  .score-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    border-radius: 1rem;
+    text-align: right;
+  }
+
+  .score-card .label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    margin-bottom: 0.2rem;
+  }
+
+  .score-card .value {
+    font-size: 2rem;
+    font-weight: 800;
     color: #facc15;
-    background: rgba(250, 204, 21, 0.1);
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
+  }
+
+  .score-card .total {
+    font-size: 1rem;
+    color: #475569;
   }
 
   .canvas-wrapper {
     position: relative;
-    border-radius: 0.5rem;
+    border-radius: 1.5rem;
     overflow: hidden;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.2);
+    border: 1px solid var(--glass-border);
   }
 
   canvas {
-    background: #1e293b;
-    border: 2px solid #334155;
+    background: #020617;
     display: block;
   }
 
   .overlay {
     position: absolute;
     inset: 0;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(4px);
+    background: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(8px);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1.5rem;
-    z-index: 10;
-    transition: opacity 0.3s;
+    z-index: 50;
+    transition: all 0.5s ease;
+  }
+
+  .message-box {
+    text-align: center;
+    transform: scale(1.1);
+  }
+
+  .message-box h1 {
+    font-size: 4rem;
+    font-weight: 900;
+    margin: 0;
+  }
+
+  .message-box p {
+    color: #94a3b8;
+    margin: 1rem 0 2rem 0;
   }
 
   .hidden {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
   }
 
-  .ui {
-    text-align: center;
+  .ui-footer .legend {
+    display: flex;
+    gap: 2rem;
+    background: var(--glass);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    border: 1px solid var(--glass-border);
   }
 
-  h2 {
-    margin: 0;
-    font-weight: 700;
-    color: #f1f5f9;
-  }
-
-  h1 { margin: 0; text-transform: uppercase; letter-spacing: 2px; }
-
-  p {
-    color: #94a3b8;
-    font-size: 0.9rem;
+  .legend .item {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
   }
 
-  span {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
+  .icon {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
   }
 
-  .hunter { background: #f87171; }
-  .survivor { background: #4ade80; }
-  .item { background: #facc15; }
+  .icon.shield { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
+  .icon.speed { background: #facc15; box-shadow: 0 0 10px #facc15; }
+  .icon.obstacle { background: #475569; border-radius: 2px; }
+  .icon.minimap { background: transparent; border: 1px solid white; border-radius: 2px; }
 
   button {
-    padding: 0.8rem 2rem;
+    padding: 1rem 3rem;
     background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 0.5rem;
-    font-weight: 700;
-    font-size: 1rem;
+    border-radius: 1rem;
+    font-weight: 800;
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
   }
 
   button:hover {
     background: #2563eb;
-    transform: scale(1.05);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
+  }
+
+  button:active {
+    transform: translateY(0);
   }
 </style>

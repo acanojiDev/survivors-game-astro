@@ -11,8 +11,11 @@ export class Hunter extends Entity {
 		this.onShoot = onShoot;
 	}
 
-	update(entities: Entity[], canvasWidth: number, canvasHeight: number): void {
+	update(entities: Entity[], canvasWidth: number, canvasHeight: number, score: number = 0): void {
 		const survivors = entities.filter(e => e instanceof Survivor) as Survivor[];
+
+		// Berserk logic: Speed increases based on survivors' score
+		const currentSpeed = this.speed + (score * 0.1);
 
 		// Find nearest survivor
 		let nearestSurvivor: Survivor | null = null;
@@ -27,16 +30,27 @@ export class Hunter extends Entity {
 		}
 
 		if (nearestSurvivor) {
-			this.moveTowards(nearestSurvivor.x, nearestSurvivor.y);
+			this.moveTowards(nearestSurvivor.x, nearestSurvivor.y, currentSpeed);
 
-			// Shooting logic
+			// Shooting logic (Triple Shot every 3rd shot)
 			const now = Date.now();
 			if (minDistance < 300 && now - this.lastShotTime > this.shootCooldown) {
-				this.onShoot(this.x, this.y, nearestSurvivor.x, nearestSurvivor.y);
+				// Triple Shot
+				const angle = Math.atan2(nearestSurvivor.y - this.y, nearestSurvivor.x - this.x);
+				this.onShoot(this.x, this.y, this.x + Math.cos(angle) * 100, this.y + Math.sin(angle) * 100);
+				this.onShoot(this.x, this.y, this.x + Math.cos(angle - 0.2) * 100, this.y + Math.sin(angle - 0.2) * 100);
+				this.onShoot(this.x, this.y, this.x + Math.cos(angle + 0.2) * 100, this.y + Math.sin(angle + 0.2) * 100);
+
 				this.lastShotTime = now;
 			}
 		}
 
 		this.checkBounds(canvasWidth, canvasHeight);
+	}
+
+	protected moveTowards(targetX: number, targetY: number, speed: number): void {
+		const angle = Math.atan2(targetY - this.y, targetX - this.x);
+		this.x += Math.cos(angle) * speed;
+		this.y += Math.sin(angle) * speed;
 	}
 }
