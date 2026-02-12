@@ -1,0 +1,99 @@
+---
+---
+<div class="game-container">
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <div class="ui">
+    <h2>Survivors POO Game</h2>
+    <p><span class="hunter"></span> Cazadores persiguen | <span class="survivor"></span> Supervivientes huyen</p>
+    <button id="resetBtn">Reiniciar Simulación</button>
+  </div>
+</div>
+
+<script>
+  import { GameWorld } from "../game/GameWorld";
+
+  const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
+  const ctx = canvas.getContext("2d")!;
+  const resetBtn = document.getElementById("resetBtn")!;
+
+  let world = new GameWorld(canvas.width, canvas.height);
+
+  function loop() {
+    world.update();
+    world.draw(ctx);
+    requestAnimationFrame(loop);
+  }
+
+  resetBtn.addEventListener("click", () => {
+    world = new GameWorld(canvas.width, canvas.height);
+  });
+
+  loop();
+</script>
+
+<style>
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: #0f172a;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  canvas {
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 0.5rem;
+    cursor: crosshair;
+  }
+
+  .ui {
+    text-align: center;
+  }
+
+  h2 {
+    margin: 0;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  span {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .hunter { background: #f87171; }
+  .survivor { background: #4ade80; }
+
+  button {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #2563eb;
+  }
+</style>
