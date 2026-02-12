@@ -5,14 +5,35 @@ export class Hunter extends Entity {
 	lastShotTime: number = 0;
 	shootCooldown: number = 2000; // 2 seconds
 	onShoot: (x: number, y: number, tx: number, ty: number) => void;
+	isPhantom: boolean = false;
+	isBoss: boolean = false;
+	isEnraged: boolean = false;
 
-	constructor(x: number, y: number, onShoot: (x: number, y: number, tx: number, ty: number) => void) {
-		super(x, y, "#f87171", "/assets/hunter.svg", 2, 'hunter');
+	constructor(x: number, y: number, onShoot: (x: number, y: number, tx: number, ty: number) => void, isBoss: boolean = false, isPhantom: boolean = false) {
+		super(x, y, isBoss ? "#fb7185" : (isPhantom ? "#8b5cf6" : "#f87171"), "/assets/hunter.svg", isBoss ? 3 : (isPhantom ? 4 : 2), 'hunter');
 		this.onShoot = onShoot;
+		this.isBoss = isBoss;
+		this.size = isBoss ? 30 : (isPhantom ? 15 : 20);
+		this.shootCooldown = isBoss ? 800 : (isPhantom ? 1200 : 2000);
+		this.isPhantom = isPhantom;
+		if (isPhantom) this.alpha = 0.6;
 	}
 
 	update(entities: Entity[], canvasWidth: number, canvasHeight: number, score: number = 0): void {
-		const survivors = entities.filter(e => e instanceof Survivor) as Survivor[];
+		const now = Date.now();
+		if (this.isPhantom) this.effects.speedBoost = now + 1000; // Constant trails for phantoms
+
+		// Enraged Phase (Boss only)
+		if (this.isBoss && score > 80 && !this.isEnraged) {
+			this.isEnraged = true;
+			this.speed *= 2; // Double speed
+			this.shootCooldown /= 2; // Halve cooldown
+			this.color = "#ef4444"; // Bright red
+			this.auraSize = this.size * 1.5; // Add fire-aura effect
+			this.auraColor = "#ef4444";
+		}
+
+		const survivors = entities.filter(e => e.type === 'survivor') as Survivor[];
 
 		// Berserk logic: Speed increases based on survivors' score
 		const currentSpeed = this.speed + (score * 0.1);

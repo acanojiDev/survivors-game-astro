@@ -11,6 +11,8 @@ export abstract class Entity {
 	};
 	trails: { x: number, y: number, alpha: number }[] = [];
 	alpha: number = 1.0;
+	auraColor: string = "";
+	auraSize: number = 0;
 	image: HTMLImageElement | null = null;
 	imageSrc: string;
 	readonly type: string;
@@ -37,10 +39,30 @@ export abstract class Entity {
 		const drawY = this.y - camY;
 		ctx.globalAlpha = this.alpha;
 
+		// Draw Aura (Leveling effect)
+		if (this.auraSize > 0 && this.auraColor) {
+			ctx.save();
+			const pulse = Math.sin(Date.now() / 200) * 4;
+			ctx.shadowBlur = this.auraSize + pulse;
+			ctx.shadowColor = this.auraColor;
+			ctx.strokeStyle = this.auraColor;
+			ctx.lineWidth = 2 + (pulse > 0 ? 1 : 0);
+			ctx.beginPath();
+			ctx.arc(drawX, drawY, this.size + 2 + pulse / 2, 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.restore();
+		}
+
 		// Draw trails
 		for (const t of this.trails) {
 			ctx.save();
 			ctx.globalAlpha = t.alpha * 0.5;
+
+			// Hyper-speed color shift
+			if (this.effects.speedBoost > Date.now()) {
+				ctx.filter = `hue-rotate(${Math.sin(Date.now() / 100) * 180}deg) brightness(1.5)`;
+			}
+
 			if (this.image && this.image.complete) {
 				ctx.drawImage(this.image, t.x - camX - this.size, t.y - camY - this.size, this.size * 2, this.size * 2);
 			}
@@ -88,6 +110,32 @@ export abstract class Entity {
 			ctx.beginPath();
 			ctx.arc(drawX, drawY, this.size, 0, Math.PI * 2);
 			ctx.fill();
+		}
+		// Draw Shield (Hexagonal Pattern)
+		if (this.effects.shield > Date.now()) {
+			ctx.save();
+			ctx.strokeStyle = "#3b82f6";
+			ctx.lineWidth = 3;
+			ctx.shadowBlur = 10;
+			ctx.shadowColor = "#3b82f6";
+
+			ctx.beginPath();
+			const sides = 6;
+			const radius = this.size + 10;
+			for (let i = 0; i <= sides; i++) {
+				const angle = (i * 2 * Math.PI) / sides + (Date.now() / 500);
+				const x = drawX + radius * Math.cos(angle);
+				const y = drawY + radius * Math.sin(angle);
+				if (i === 0) ctx.moveTo(x, y);
+				else ctx.lineTo(x, y);
+			}
+			ctx.closePath();
+			ctx.stroke();
+
+			ctx.globalAlpha = 0.2;
+			ctx.fillStyle = "#3b82f6";
+			ctx.fill();
+			ctx.restore();
 		}
 	}
 

@@ -13,14 +13,46 @@
   </div>
 
   <div class="canvas-wrapper">
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
-    <div id="statusOverlay" class="overlay hidden">
-      <div class="message-box">
-        <h1 id="statusMsg">¡Sobrevivieron!</h1>
-        <p id="subMsg">Has dominado el modo CHAOS.</p>
-        <button id="resetBtn">REINTENTAR</button>
+    <canvas id="gameCanvas"></canvas>
+  <div id="classOverlay" class="overlay">
+    <div class="upgrade-container">
+      <h2 class="upgrade-title">SELECT YOUR HERO CLASS</h2>
+      <div class="upgrade-options">
+        <div class="upgrade-card" id="btnTank">
+          <div class="upgrade-icon">🛡️</div>
+          <div class="upgrade-name">The Tank</div>
+          <div class="upgrade-desc">Extra size, permanent shield, slower movement.</div>
+        </div>
+        <div class="upgrade-card" id="btnSpeedster">
+          <div class="upgrade-icon">⚡</div>
+          <div class="upgrade-name">The Speedster</div>
+          <div class="upgrade-desc">Small size, ultra high speed, fast dash.</div>
+        </div>
+        <div class="upgrade-card" id="btnMage">
+          <div class="upgrade-icon">🧪</div>
+          <div class="upgrade-name">The Mage</div>
+          <div class="upgrade-desc">Double Nova charge, starts with a Sentinel Drone.</div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div id="upgradeOverlay" class="overlay hidden">
+    <div class="upgrade-container">
+      <h2 class="upgrade-title">LEGENDARY UPGRADE AVAILABLE</h2>
+      <div id="upgradeOptions" class="upgrade-options">
+        <!-- Upgrades will be injected here -->
+      </div>
+    </div>
+  </div>
+
+  <div class="status-overlay" id="statusOverlay">
+    <div class="status-content">
+      <h2 id="statusTitle">GAME OVER</h2>
+      <p id="statusStats"></p>
+      <button class="restart-btn" id="restartBtn">NEW RUN</button>
+    </div>
+  </div>
   </div>
 
   <div class="ui-footer">
@@ -28,7 +60,7 @@
       <div class="item"><span class="icon shield"></span> Escudo</div>
       <div class="item"><span class="icon speed"></span> Dash</div>
       <div class="item"><span class="icon boss"></span> Alfa</div>
-      <div class="item"><span class="icon fog"></span> Niebla</div>
+      <div class="item"><span class="icon thunder"></span> Rayo</div>
     </div>
   </div>
 </div>
@@ -38,11 +70,14 @@
 
   const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
-  const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
+  const restartBtn = document.getElementById("restartBtn") as HTMLButtonElement;
   const scoreVal = document.getElementById("scoreVal")!;
   const statusOverlay = document.getElementById("statusOverlay")!;
-  const statusMsg = document.getElementById("statusMsg")!;
-  const subMsg = document.getElementById("subMsg")!;
+  const statusTitle = document.getElementById("statusTitle")!;
+  const statusStats = document.getElementById("statusStats")!;
+  const upgradeOverlay = document.getElementById("upgradeOverlay")!;
+  const upgradeOptions = document.getElementById("upgradeOptions")!;
+  const classOverlay = document.getElementById('classOverlay')!;
 
   let world = new GameWorld(
     canvas.width,
@@ -53,21 +88,68 @@
         statusOverlay.classList.add('hidden');
       } else {
         statusOverlay.classList.remove('hidden');
-        statusMsg.innerText = state === 'survivorsWin' ? '🌌 DIOS DEL CAOS' : '💀 ANIQUILADOS';
-        statusMsg.style.color = state === 'survivorsWin' ? '#34d399' : '#f87171';
-        subMsg.innerText = state === 'survivorsWin' ? 'Has recolectado 100 estrellas bajo la niebla.' : 'El Alfa ha terminado la cacería perfecta.';
+        statusTitle.innerText = state === 'survivorsWin' ? '🌌 DIOS DEL CAOS' : '💀 ANIQUILADOS';
+        statusTitle.style.color = state === 'survivorsWin' ? '#34d399' : '#f87171';
+        statusStats.innerText = state === 'survivorsWin' ? 'Has recolectado 100 estrellas bajo la niebla.' : 'El Alfa ha terminado la cacería perfecta.';
       }
     }
   );
 
+  const btnTank = document.getElementById('btnTank')!;
+  const btnSpeedster = document.getElementById('btnSpeedster')!;
+  const btnMage = document.getElementById('btnMage')!;
+
+  btnTank.onclick = () => { world.applyHeroClass('tank'); classOverlay.classList.add('hidden'); };
+  btnSpeedster.onclick = () => { world.applyHeroClass('speedster'); classOverlay.classList.add('hidden'); };
+  btnMage.onclick = () => { world.applyHeroClass('mage'); classOverlay.classList.add('hidden'); };
+
+  function resize() {
+    canvas.width = canvas.parentElement!.clientWidth;
+    canvas.height = canvas.parentElement!.clientHeight;
+    world.resize(canvas.width, canvas.height);
+  }
+
+  window.addEventListener("resize", resize);
+  resize(); // Initial call
+
+  function showUpgradeUI() {
+    if (!world.isUpgradePending) return;
+
+    upgradeOptions.innerHTML = '';
+    world.availableUpgrades.forEach(upgrade => {
+      const card = document.createElement('div');
+      card.className = 'upgrade-card';
+      card.innerHTML = `
+        <div class="upgrade-icon">${upgrade.icon}</div>
+        <div class="upgrade-name">${upgrade.name}</div>
+        <div class="upgrade-desc">${upgrade.desc}</div>
+      `;
+      card.onclick = () => {
+        world.applyUpgrade(upgrade.id);
+        upgradeOverlay.classList.add('hidden');
+      };
+      upgradeOptions.appendChild(card);
+    });
+
+    upgradeOverlay.classList.remove('hidden');
+  }
+
   function loop() {
-    world.update();
+    if (world.isUpgradePending && upgradeOverlay.classList.contains('hidden')) {
+      showUpgradeUI();
+    }
+
+    if (!document.hidden && !world.isUpgradePending) {
+      world.update();
+    }
     world.draw(ctx);
     requestAnimationFrame(loop);
   }
 
-  resetBtn.addEventListener("click", () => {
+  restartBtn.addEventListener("click", () => {
     world.init();
+    statusOverlay.classList.add('hidden');
+    classOverlay.classList.remove('hidden');
   });
 
   loop();
@@ -91,7 +173,8 @@
     box-shadow: 0 0 80px rgba(0,0,0,0.5);
     color: white;
     font-family: 'Outfit', 'Inter', sans-serif;
-    max-width: 900px;
+    width: 95vw;
+    margin: 0 auto;
   }
 
   .header {
@@ -155,6 +238,8 @@
 
   .canvas-wrapper {
     position: relative;
+    width: 100%;
+    height: 75vh;
     border-radius: 1.5rem;
     overflow: hidden;
     box-shadow: 0 0 40px rgba(59, 130, 246, 0.2);
@@ -164,18 +249,113 @@
   canvas {
     background: #020617;
     display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .overlay {
     position: absolute;
     inset: 0;
-    background: rgba(2, 6, 23, 0.8);
-    backdrop-filter: blur(8px);
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
-    transition: all 0.5s ease;
+    background: rgba(2, 6, 23, 0.7);
+    backdrop-filter: blur(12px);
+    transition: opacity 0.3s;
+  }
+
+  .upgrade-container {
+    text-align: center;
+    max-width: 900px;
+    width: 95%;
+    padding: 2rem;
+  }
+
+  .upgrade-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 3rem;
+    color: #fca311;
+    text-shadow: 0 0 30px rgba(252, 163, 17, 0.4);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .upgrade-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .upgrade-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2.5rem;
+    padding: 3rem 2rem;
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+
+  .upgrade-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .upgrade-card:hover::before {
+    transform: translateX(100%);
+  }
+
+  .upgrade-card:hover {
+    transform: translateY(-20px) scale(1.02);
+    border-color: #3b82f6;
+    box-shadow:
+      0 30px 60px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(59, 130, 246, 0.4),
+      inset 0 0 20px rgba(59, 130, 246, 0.1);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(59, 130, 246, 0.1));
+  }
+
+  .upgrade-card:active {
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  .upgrade-icon {
+    font-size: 5rem;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+    margin-bottom: 1rem;
+    transition: transform 0.5s ease;
+  }
+
+  .upgrade-card:hover .upgrade-icon {
+    transform: scale(1.2) rotate(5deg);
+  }
+
+  .upgrade-name {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: white;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+
+  .upgrade-desc {
+    font-size: 1.1rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+    font-weight: 500;
   }
 
   .message-box {
@@ -226,7 +406,7 @@
   .icon.shield { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
   .icon.speed { background: #facc15; box-shadow: 0 0 10px #facc15; }
   .icon.boss { background: #fb7185; box-shadow: 0 0 10px #fb7185; }
-  .icon.fog { background: rgba(0,0,0,0.5); border: 1px solid #475569; }
+  .icon.thunder { background: white; box-shadow: 0 0 10px white; }
 
   button {
     padding: 1rem 3rem;
