@@ -9,10 +9,14 @@ export abstract class Entity {
 		speedBoost: 0,
 		invisible: 0
 	};
+	trails: { x: number, y: number, alpha: number }[] = [];
+	alpha: number = 1.0;
 	image: HTMLImageElement | null = null;
 	imageSrc: string;
+	readonly type: string;
 
-	constructor(x: number, y: number, color: string, imageSrc: string, speed: number = 2) {
+	constructor(x: number, y: number, color: string, imageSrc: string, speed: number = 2, type: string = 'entity') {
+		this.type = type;
 		this.x = x;
 		this.y = y;
 		this.size = 15;
@@ -31,6 +35,18 @@ export abstract class Entity {
 	draw(ctx: CanvasRenderingContext2D, camX: number = 0, camY: number = 0): void {
 		const drawX = this.x - camX;
 		const drawY = this.y - camY;
+		ctx.globalAlpha = this.alpha;
+
+		// Draw trails
+		for (const t of this.trails) {
+			ctx.save();
+			ctx.globalAlpha = t.alpha * 0.5;
+			if (this.image && this.image.complete) {
+				ctx.drawImage(this.image, t.x - camX - this.size, t.y - camY - this.size, this.size * 2, this.size * 2);
+			}
+			ctx.restore();
+		}
+
 		const now = Date.now();
 
 		// Draw glow if shielded
@@ -100,5 +116,13 @@ export abstract class Entity {
 		if (this.x > width) this.x = width;
 		if (this.y < 0) this.y = 0;
 		if (this.y > height) this.y = height;
+
+		// Update trails
+		const now = Date.now();
+		if (this.effects.speedBoost > now) {
+			this.trails.unshift({ x: this.x, y: this.y, alpha: 1.0 });
+		}
+		if (this.trails.length > 5) this.trails.pop();
+		for (const t of this.trails) t.alpha *= 0.8;
 	}
 }

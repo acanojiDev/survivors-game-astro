@@ -7,7 +7,7 @@ export class Projectile extends Entity {
 	maxDistance: number = 400;
 
 	constructor(x: number, y: number, targetX: number, targetY: number) {
-		super(x, y, "#f87171", "/assets/projectile.svg", 5);
+		super(x, y, "#f87171", "/assets/projectile.svg", 5, 'projectile');
 		this.size = 8;
 
 		const angle = Math.atan2(targetY - y, targetX - x);

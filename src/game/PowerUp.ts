@@ -8,7 +8,7 @@ export class PowerUp extends Entity {
 	constructor(x: number, y: number) {
 		const types: PowerType[] = ['shield', 'speed'];
 		const type = types[Math.floor(Math.random() * types.length)];
-		super(x, y, "#60a5fa", "/assets/powerup.svg", 0);
+		super(x, y, "#60a5fa", "/assets/powerup.svg", 0, 'powerup');
 		this.type = type;
 		this.size = 12;
 	}

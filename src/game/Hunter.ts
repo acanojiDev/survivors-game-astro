@@ -7,7 +7,7 @@ export class Hunter extends Entity {
 	onShoot: (x: number, y: number, tx: number, ty: number) => void;
 
 	constructor(x: number, y: number, onShoot: (x: number, y: number, tx: number, ty: number) => void) {
-		super(x, y, "#f87171", "/assets/hunter.svg", 2);
+		super(x, y, "#f87171", "/assets/hunter.svg", 2, 'hunter');
 		this.onShoot = onShoot;
 	}
 

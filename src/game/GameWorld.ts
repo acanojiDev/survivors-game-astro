@@ -20,6 +20,8 @@ export class GameWorld {
 	particles: { x: number, y: number, color: string, life: number }[] = [];
 	screenShake: number = 0;
 	camera = { x: 0, y: 0 };
+	killFeed: { msg: string, time: number }[] = [];
+	hasSpawnedBoss: boolean = false;
 
 	constructor(
 		viewWidth: number,
@@ -42,6 +44,8 @@ export class GameWorld {
 		this.onGameStateChange('playing');
 		this.particles = [];
 		this.screenShake = 0;
+		this.killFeed = [];
+		this.hasSpawnedBoss = false;
 		this.camera = { x: this.width / 2 - this.viewWidth / 2, y: this.height / 2 - this.viewHeight / 2 };
 
 		// Add obstacles
@@ -63,13 +67,7 @@ export class GameWorld {
 
 		// Add hunters
 		for (let i = 0; i < 3; i++) {
-			this.entities.push(new Hunter(
-				Math.random() * this.width,
-				Math.random() * this.height,
-				(x, y, tx, ty) => {
-					this.entities.push(new Projectile(x, y, tx, ty) as any);
-				}
-			));
+			this.spawnHunter();
 		}
 
 		// Initial items
@@ -81,6 +79,29 @@ export class GameWorld {
 		for (let i = 0; i < 4; i++) {
 			this.spawnPowerUp();
 		}
+	}
+
+	spawnHunter(isBoss: boolean = false) {
+		const hunter = new Hunter(
+			Math.random() * this.width,
+			Math.random() * this.height,
+			(x, y, tx, ty) => {
+				this.entities.push(new Projectile(x, y, tx, ty) as any);
+			}
+		);
+		if (isBoss) {
+			hunter.size = 30;
+			hunter.speed = 3;
+			hunter.shootCooldown = 800;
+			hunter.color = "#fb7185";
+			this.addMessage("⚠️ ¡EL CAZADOR ALFA HA DESPERTADO!");
+		}
+		this.entities.push(hunter);
+	}
+
+	addMessage(msg: string) {
+		this.killFeed.unshift({ msg, time: Date.now() });
+		if (this.killFeed.length > 5) this.killFeed.pop();
 	}
 
 	spawnItem() {
@@ -109,7 +130,7 @@ export class GameWorld {
 	}
 
 	checkObstacleCollision(x: number, y: number, size: number): boolean {
-		const obstacles = this.entities.filter(e => e.constructor.name === 'Obstacle') as Obstacle[];
+		const obstacles = this.entities.filter(e => e.type === 'obstacle') as Obstacle[];
 		for (const obs of obstacles) {
 			const dist = Math.sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2);
 			if (dist < (size + obs.size)) return true;
@@ -129,12 +150,18 @@ export class GameWorld {
 		if (this.state !== 'playing') return;
 
 		const now = Date.now();
-		const hunters = this.entities.filter(e => e.constructor.name === 'Hunter') as Hunter[];
-		const survivors = this.entities.filter(e => e.constructor.name === 'Survivor') as Survivor[];
-		const items = this.entities.filter(e => e.constructor.name === 'Item') as Item[];
-		const projectiles = this.entities.filter(e => e.constructor.name === 'Projectile') as Projectile[];
-		const powerups = this.entities.filter(e => e.constructor.name === 'PowerUp') as PowerUp[];
-		const obstacles = this.entities.filter(e => e.constructor.name === 'Obstacle') as Obstacle[];
+		const hunters = this.entities.filter(e => e.type === 'hunter') as Hunter[];
+		const survivors = this.entities.filter(e => e.type === 'survivor') as Survivor[];
+		const items = this.entities.filter(e => e.type === 'item') as Item[];
+		const projectiles = this.entities.filter(e => e.type === 'projectile') as Projectile[];
+		const powerups = this.entities.filter(e => e.type === 'powerup') as PowerUp[];
+		const obstacles = this.entities.filter(e => e.type === 'obstacle') as Obstacle[];
+
+		// Spawn boss
+		if (this.score >= 40 && !this.hasSpawnedBoss) {
+			this.hasSpawnedBoss = true;
+			this.spawnHunter(true);
+		}
 
 		// 1. Hunter catches Survivor
 		for (const hunter of hunters) {
@@ -144,12 +171,14 @@ export class GameWorld {
 					if (survivor.effects.shield > now) {
 						survivor.effects.shield = 0;
 						this.createExplosion(survivor.x, survivor.y, "#3b82f6");
+						this.addMessage("🛡️ Escudo roto!");
 					} else {
 						const index = this.entities.indexOf(survivor);
 						if (index > -1) {
 							this.entities.splice(index, 1);
 							this.screenShake = 15;
 							this.createExplosion(survivor.x, survivor.y, "#f87171");
+							this.addMessage("💀 Superviviente eliminado");
 						}
 					}
 				}
@@ -177,12 +206,14 @@ export class GameWorld {
 						if (survivor.effects.shield > now) {
 							survivor.effects.shield = 0;
 							this.createExplosion(survivor.x, survivor.y, "#3b82f6");
+							this.addMessage("🛡️ Bloqueo de proyectil!");
 						} else {
 							const sIndex = this.entities.indexOf(survivor);
 							if (sIndex > -1) {
 								this.entities.splice(sIndex, 1);
 								this.screenShake = 10;
 								this.createExplosion(survivor.x, survivor.y, "#f87171");
+								this.addMessage("🏹 Impacto crítico");
 							}
 						}
 						hit = true;
@@ -225,17 +256,17 @@ export class GameWorld {
 					const index = this.entities.indexOf(pu);
 					if (index > -1) this.entities.splice(index, 1);
 					this.createExplosion(pu.x, pu.y, "#60a5fa");
+					this.addMessage(`✨ POWERUP: ${pu.type === 'shield' ? 'ESCUDO' : 'VELOCIDAD'}`);
 				}
 			}
 		}
 
-		// 5. Obstacle Repulsion (simple)
+		// 5. Obstacle Repulsion
 		for (const entity of this.entities) {
-			if (entity.constructor.name === 'Obstacle' || entity.constructor.name === 'Projectile') continue;
+			if (entity.type === 'obstacle' || entity.type === 'projectile') continue;
 			for (const obs of obstacles) {
 				const dist = entity.distanceTo(obs);
 				if (dist < (entity.size + obs.size)) {
-					// Push out
 					const angle = Math.atan2(entity.y - obs.y, entity.x - obs.x);
 					entity.x = obs.x + Math.cos(angle) * (entity.size + obs.size + 1);
 					entity.y = obs.y + Math.sin(angle) * (entity.size + obs.size + 1);
@@ -272,7 +303,7 @@ export class GameWorld {
 		if (survivors.length === 0) {
 			this.state = 'huntersWin';
 			this.onGameStateChange('huntersWin');
-		} else if (this.score >= 50) { // Goal increased for God Mode
+		} else if (this.score >= 100) { // Goal increased for Chaos Mode
 			this.state = 'survivorsWin';
 			this.onGameStateChange('survivorsWin');
 		}
@@ -308,11 +339,23 @@ export class GameWorld {
 			ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(this.viewWidth, i); ctx.stroke();
 		}
 
-		// Draw entities with camera offset
+		// Draw non-survivor entities (under fog)
 		for (const entity of this.entities) {
-			// Basic culling
-			if (entity.x > this.camera.x - 50 && entity.x < this.camera.x + this.viewWidth + 50 &&
-				entity.y > this.camera.y - 50 && entity.y < this.camera.y + this.viewHeight + 50) {
+			if (entity.type === 'survivor') continue;
+			if (entity.x > this.camera.x - 100 && entity.x < this.camera.x + this.viewWidth + 100 &&
+				entity.y > this.camera.y - 100 && entity.y < this.camera.y + this.viewHeight + 100) {
+				entity.draw(ctx, this.camera.x, this.camera.y);
+			}
+		}
+
+		// 10. Fog of War
+		this.drawFog(ctx);
+
+		// 11. Draw survivors (on top of fog holes)
+		for (const entity of this.entities) {
+			if (entity.type !== 'survivor') continue;
+			if (entity.x > this.camera.x - 100 && entity.x < this.camera.x + this.viewWidth + 100 &&
+				entity.y > this.camera.y - 100 && entity.y < this.camera.y + this.viewHeight + 100) {
 				entity.draw(ctx, this.camera.x, this.camera.y);
 			}
 		}
@@ -328,8 +371,52 @@ export class GameWorld {
 		ctx.globalAlpha = 1.0;
 		ctx.restore();
 
+		// Draw Feed
+		this.drawFeed(ctx);
+
 		// Draw Minimap
 		this.drawMinimap(ctx);
+	}
+
+	drawFog(ctx: CanvasRenderingContext2D) {
+		ctx.save();
+		ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; // Global fog
+		ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
+
+		ctx.globalCompositeOperation = "destination-out";
+		const survivors = this.entities.filter(e => e.type === 'survivor') as Survivor[];
+
+		for (const s of survivors) {
+			const radius = 200;
+			const grad = ctx.createRadialGradient(
+				s.x - this.camera.x, s.y - this.camera.y, 0,
+				s.x - this.camera.x, s.y - this.camera.y, radius
+			);
+			grad.addColorStop(0, "rgba(255, 255, 255, 1.0)");
+			grad.addColorStop(1, "rgba(255, 255, 255, 0.0)");
+			ctx.fillStyle = grad;
+			ctx.beginPath();
+			ctx.arc(s.x - this.camera.x, s.y - this.camera.y, radius, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.restore();
+	}
+
+	drawFeed(ctx: CanvasRenderingContext2D) {
+		ctx.font = "bold 12px 'Outfit', sans-serif";
+		let y = 30;
+		for (const item of this.killFeed) {
+			const age = Date.now() - item.time;
+			if (age > 4000) continue;
+			ctx.globalAlpha = Math.max(0, 1 - age / 4000);
+			ctx.fillStyle = "rgba(0,0,0,0.5)";
+			const metrics = ctx.measureText(item.msg);
+			ctx.fillRect(10, y - 15, metrics.width + 20, 20);
+			ctx.fillStyle = "white";
+			ctx.fillText(item.msg, 20, y);
+			y += 25;
+		}
+		ctx.globalAlpha = 1.0;
 	}
 
 	drawMinimap(ctx: CanvasRenderingContext2D) {
@@ -339,7 +426,6 @@ export class GameWorld {
 		const mapY = 20;
 		const scale = mapWidth / this.width;
 
-		// Bg
 		ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
 		ctx.strokeStyle = "rgba(59, 130, 246, 0.5)";
 		ctx.lineWidth = 2;
@@ -354,10 +440,10 @@ export class GameWorld {
 
 		// Entities
 		for (const entity of this.entities) {
-			if (entity instanceof Survivor) ctx.fillStyle = "#4ade80";
-			else if (entity instanceof Hunter) ctx.fillStyle = "#f87171";
-			else if (entity instanceof Item) ctx.fillStyle = "#facc15";
-			else if (entity.constructor.name === 'Obstacle') ctx.fillStyle = "#475569";
+			if (entity.type === 'survivor') ctx.fillStyle = "#4ade80";
+			else if (entity.type === 'hunter') ctx.fillStyle = "#f87171";
+			else if (entity.type === 'item') ctx.fillStyle = "#facc15";
+			else if (entity.type === 'obstacle') ctx.fillStyle = "#475569";
 			else continue;
 
 			ctx.beginPath();

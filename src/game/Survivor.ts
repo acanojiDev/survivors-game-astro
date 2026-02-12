@@ -4,7 +4,7 @@ import { Item } from "./Item";
 
 export class Survivor extends Entity {
 	constructor(x: number, y: number) {
-		super(x, y, "#4ade80", "/assets/survivor.svg", 1.5);
+		super(x, y, "#4ade80", "/assets/survivor.svg", 1.5, 'survivor');
 	}
 
 	dashCooldown: number = 3000;

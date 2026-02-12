@@ -8,7 +8,7 @@
     </div>
     <div class="score-card shadow-lg">
       <div class="label">OBJETIVOS</div>
-      <div class="value"><span id="scoreVal">0</span> <span class="total">/ 50</span></div>
+      <div class="value"><span id="scoreVal">0</span> <span class="total">/ 100</span></div>
     </div>
   </div>
 
@@ -17,8 +17,8 @@
     <div id="statusOverlay" class="overlay hidden">
       <div class="message-box">
         <h1 id="statusMsg">¡Sobrevivieron!</h1>
-        <p id="subMsg">Has dominado el modo God Mode.</p>
-        <button id="resetBtn">PROBAR DE NUEVO</button>
+        <p id="subMsg">Has dominado el modo CHAOS.</p>
+        <button id="resetBtn">REINTENTAR</button>
       </div>
     </div>
   </div>
@@ -27,8 +27,8 @@
     <div class="legend">
       <div class="item"><span class="icon shield"></span> Escudo</div>
       <div class="item"><span class="icon speed"></span> Dash</div>
-      <div class="item"><span class="icon obstacle"></span> Muro</div>
-      <div class="item"><span class="icon minimap"></span> Minimapa</div>
+      <div class="item"><span class="icon boss"></span> Alfa</div>
+      <div class="item"><span class="icon fog"></span> Niebla</div>
     </div>
   </div>
 </div>
@@ -38,7 +38,7 @@
 
   const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
-  const resetBtn = document.getElementById("resetBtn")!;
+  const resetBtn = document.getElementById("resetBtn") as HTMLButtonElement;
   const scoreVal = document.getElementById("scoreVal")!;
   const statusOverlay = document.getElementById("statusOverlay")!;
   const statusMsg = document.getElementById("statusMsg")!;
@@ -53,9 +53,9 @@
         statusOverlay.classList.add('hidden');
       } else {
         statusOverlay.classList.remove('hidden');
-        statusMsg.innerText = state === 'survivorsWin' ? '🌌 ¡DIOS!' : '💀 ANIQUILADOS';
+        statusMsg.innerText = state === 'survivorsWin' ? '🌌 DIOS DEL CAOS' : '💀 ANIQUILADOS';
         statusMsg.style.color = state === 'survivorsWin' ? '#34d399' : '#f87171';
-        subMsg.innerText = state === 'survivorsWin' ? 'Has recolectado 50 estrellas en modo God.' : 'El mundo es demasiado grande para esconderse.';
+        subMsg.innerText = state === 'survivorsWin' ? 'Has recolectado 100 estrellas bajo la niebla.' : 'El Alfa ha terminado la cacería perfecta.';
       }
     }
   );
@@ -225,8 +225,8 @@
 
   .icon.shield { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
   .icon.speed { background: #facc15; box-shadow: 0 0 10px #facc15; }
-  .icon.obstacle { background: #475569; border-radius: 2px; }
-  .icon.minimap { background: transparent; border: 1px solid white; border-radius: 2px; }
+  .icon.boss { background: #fb7185; box-shadow: 0 0 10px #fb7185; }
+  .icon.fog { background: rgba(0,0,0,0.5); border: 1px solid #475569; }
 
   button {
     padding: 1rem 3rem;
