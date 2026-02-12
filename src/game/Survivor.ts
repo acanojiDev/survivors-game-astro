@@ -1,5 +1,6 @@
 import { Entity } from "./Entity";
 import { Hunter } from "./Hunter";
+import { Item } from "./Item";
 
 export class Survivor extends Entity {
 	constructor(x: number, y: number) {
@@ -8,25 +9,43 @@ export class Survivor extends Entity {
 
 	update(entities: Entity[], canvasWidth: number, canvasHeight: number): void {
 		const hunters = entities.filter(e => e instanceof Hunter) as Hunter[];
+		const items = entities.filter(e => e instanceof Item) as Item[];
 
-		// Find nearest hunter
+		// 1. Flee from hunters first (highest priority)
 		let nearestHunter: Hunter | null = null;
-		let minDistance = 150; // Detection range
+		let minHunterDist = 150;
 
 		for (const hunter of hunters) {
 			const dist = this.distanceTo(hunter);
-			if (dist < minDistance) {
-				minDistance = dist;
+			if (dist < minHunterDist) {
+				minHunterDist = dist;
 				nearestHunter = hunter;
 			}
 		}
 
 		if (nearestHunter) {
 			this.moveAwayFrom(nearestHunter.x, nearestHunter.y);
-		} else {
-			// Idle random movement
-			this.x += (Math.random() - 0.5) * 1;
-			this.y += (Math.random() - 0.5) * 1;
+		}
+		// 2. If no hunters nearby, seek nearest item
+		else {
+			let nearestItem: Item | null = null;
+			let minItemDist = Infinity;
+
+			for (const item of items) {
+				const dist = this.distanceTo(item);
+				if (dist < minItemDist) {
+					minItemDist = dist;
+					nearestItem = item;
+				}
+			}
+
+			if (nearestItem) {
+				this.moveTowards(nearestItem.x, nearestItem.y);
+			} else {
+				// Idle movement
+				this.x += (Math.random() - 0.5) * 1;
+				this.y += (Math.random() - 0.5) * 1;
+			}
 		}
 
 		this.checkBounds(canvasWidth, canvasHeight);

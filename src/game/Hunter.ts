@@ -2,8 +2,13 @@ import { Entity } from "./Entity";
 import { Survivor } from "./Survivor";
 
 export class Hunter extends Entity {
-	constructor(x: number, y: number) {
+	lastShotTime: number = 0;
+	shootCooldown: number = 2000; // 2 seconds
+	onShoot: (x: number, y: number, tx: number, ty: number) => void;
+
+	constructor(x: number, y: number, onShoot: (x: number, y: number, tx: number, ty: number) => void) {
 		super(x, y, "#f87171", "/assets/hunter.svg", 2);
+		this.onShoot = onShoot;
 	}
 
 	update(entities: Entity[], canvasWidth: number, canvasHeight: number): void {
@@ -24,7 +29,12 @@ export class Hunter extends Entity {
 		if (nearestSurvivor) {
 			this.moveTowards(nearestSurvivor.x, nearestSurvivor.y);
 
-			// If hunter catches survivor, survivor "dies" (logic handled in GameWorld for better separation)
+			// Shooting logic
+			const now = Date.now();
+			if (minDistance < 300 && now - this.lastShotTime > this.shootCooldown) {
+				this.onShoot(this.x, this.y, nearestSurvivor.x, nearestSurvivor.y);
+				this.lastShotTime = now;
+			}
 		}
 
 		this.checkBounds(canvasWidth, canvasHeight);

@@ -1,11 +1,19 @@
 ---
 ---
 <div class="game-container">
-  <canvas id="gameCanvas" width="800" height="500"></canvas>
-  <div class="ui">
+  <div class="header">
     <h2>Survivors POO Game</h2>
-    <p><span class="hunter"></span> Cazadores persiguen | <span class="survivor"></span> Supervivientes huyen</p>
-    <button id="resetBtn">Reiniciar Simulación</button>
+    <div class="score-board">Objetos: <span id="scoreVal">0</span> / 20</div>
+  </div>
+  <div class="canvas-wrapper">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div id="statusOverlay" class="overlay hidden">
+      <h1 id="statusMsg">¡Ganan los Supervivientes!</h1>
+      <button id="resetBtn">Jugar de nuevo</button>
+    </div>
+  </div>
+  <div class="ui">
+    <p><span class="hunter"></span> Lobos persiguen | <span class="survivor"></span> Humanos recolectan | <span class="item"></span> Estrellas</p>
   </div>
 </div>
 
@@ -15,8 +23,24 @@
   const canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
   const resetBtn = document.getElementById("resetBtn")!;
+  const scoreVal = document.getElementById("scoreVal")!;
+  const statusOverlay = document.getElementById("statusOverlay")!;
+  const statusMsg = document.getElementById("statusMsg")!;
 
-  let world = new GameWorld(canvas.width, canvas.height);
+  let world = new GameWorld(
+    canvas.width,
+    canvas.height,
+    (score) => { scoreVal.innerText = score.toString(); },
+    (state) => {
+      if (state === 'playing') {
+        statusOverlay.classList.add('hidden');
+      } else {
+        statusOverlay.classList.remove('hidden');
+        statusMsg.innerText = state === 'survivorsWin' ? '✨ ¡Sobrevivieron!' : '💀 ¡Cazados!';
+        statusMsg.style.color = state === 'survivorsWin' ? '#4ade80' : '#f87171';
+      }
+    }
+  );
 
   function loop() {
     world.update();
@@ -25,7 +49,7 @@
   }
 
   resetBtn.addEventListener("click", () => {
-    world = new GameWorld(canvas.width, canvas.height);
+    world.init();
   });
 
   loop();
@@ -39,17 +63,58 @@
     gap: 1rem;
     padding: 2rem;
     background: #0f172a;
-    border-radius: 1rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     color: white;
     font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+  }
+
+  .score-board {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .canvas-wrapper {
+    position: relative;
+    border-radius: 0.5rem;
+    overflow: hidden;
   }
 
   canvas {
     background: #1e293b;
     border: 2px solid #334155;
-    border-radius: 0.5rem;
-    cursor: crosshair;
+    display: block;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    z-index: 10;
+    transition: opacity 0.3s;
+  }
+
+  .hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .ui {
@@ -62,38 +127,42 @@
     color: #f1f5f9;
   }
 
+  h1 { margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+
   p {
     color: #94a3b8;
     font-size: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
   span {
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
   }
 
   .hunter { background: #f87171; }
   .survivor { background: #4ade80; }
+  .item { background: #facc15; }
 
   button {
-    margin-top: 1rem;
-    padding: 0.5rem 1.5rem;
+    padding: 0.8rem 2rem;
     background: #3b82f6;
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: transform 0.2s, background 0.2s;
   }
 
   button:hover {
     background: #2563eb;
+    transform: scale(1.05);
   }
 </style>
